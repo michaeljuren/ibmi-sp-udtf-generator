@@ -33,7 +33,7 @@ public final class ProcedureGenerator {
         sb.append("    READS SQL DATA\n");
         sb.append("BEGIN\n");
         sb.append("    DECLARE C1 CURSOR WITH RETURN TO CLIENT FOR\n");
-        sb.append("        ").append(query.replaceAll("\\R", "\n        ")).append(";\n");
+        sb.append(QuerySourceFormatter.indentAndWrap(query, "        ")).append(";\n");
         sb.append("    OPEN C1;\n");
         sb.append("END;\n");
         return sb.toString();

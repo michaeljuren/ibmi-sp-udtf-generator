@@ -1,8 +1,6 @@
 package com.example.spgen;
 
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.example.spgen.Models.ColumnInfo;
@@ -14,13 +12,6 @@ public final class FunctionGenerator {
 
     public static String generate(String library, String name, List<ColumnInfo> columns,
                                   List<ParamInfo> params, String query) {
-        // Inside a function body parameters are referenced by name, without the host variable colon.
-        String body = query;
-        for (ParamInfo p : params) {
-            body = body.replaceAll("(?i)(?<![:\\w]):" + Pattern.quote(p.name) + "\\b",
-                Matcher.quoteReplacement(p.name));
-        }
-
         StringBuilder sb = new StringBuilder();
         sb.append("CREATE OR REPLACE FUNCTION ").append(library.toUpperCase()).append('.')
             .append(name.toUpperCase());
@@ -41,7 +32,7 @@ public final class FunctionGenerator {
         sb.append("    NOT DETERMINISTIC\n");
         sb.append("    DISALLOW PARALLEL\n");
         sb.append("RETURN\n");
-        sb.append("    ").append(body.replaceAll("\\R", "\n    ")).append(";\n");
+        sb.append(QuerySourceFormatter.indentAndWrap(query, "    ")).append(";\n");
         return sb.toString();
     }
 }

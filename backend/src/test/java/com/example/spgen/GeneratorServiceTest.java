@@ -61,7 +61,7 @@ class GeneratorServiceTest {
         assertEquals("DECIMAL(9,0)", res.parameters.get(0).type);
         assertTrue(preparedSql.contains("CUSTID = ?"));
         assertTrue(res.source.contains("RETURNS TABLE"));
-        assertTrue(res.source.contains("CUSTID = ID"));
+        assertTrue(res.source.matches("(?s).*CUSTID\\s*=\\s*P_ID.*"));
         assertFalse(res.source.contains(":ID"));
     }
 
@@ -74,7 +74,8 @@ class GeneratorServiceTest {
         assertTrue(res.complete);
         assertTrue(res.columns.isEmpty());
         assertTrue(res.source.contains("CREATE OR REPLACE PROCEDURE"));
-        assertTrue(res.source.contains("IN ID DECIMAL(9,0)"));
+        assertTrue(res.source.contains("IN P_ID DECIMAL(9,0)"));
+        assertTrue(res.source.matches("(?s).*CUSTID\\s*=\\s*P_ID.*"));
         assertFalse(res.source.contains("RETURNS TABLE"));
     }
 
@@ -87,7 +88,8 @@ class GeneratorServiceTest {
         assertTrue(res.complete);
         assertEquals("VARCHAR(40)", res.parameters.get(0).type);
         assertEquals("DECIMAL(9,0)", res.parameters.get(1).type);
-        assertTrue(res.source.contains("NAME = :P1"));
+        assertTrue(res.source.contains("NAME = P_1"));
+        assertTrue(res.source.contains("IN P_1 VARCHAR(40)"));
         assertEquals("SELECT * FROM CUSTOMER WHERE NAME = ? AND CUSTID > ?", preparedSql);
     }
 
@@ -112,7 +114,7 @@ class GeneratorServiceTest {
         assertEquals("EXPR_1", res.columns.get(0).name);
 
         r.columnTypes = Map.of("EXPR_1", "DECIMAL(15,2)");
-        r.parameterTypes = Map.of("P1", "INTEGER");
+        r.parameterTypes = Map.of("P_1", "INTEGER");
         res = service.generate(r);
         assertTrue(res.complete);
         assertTrue(res.source.contains("EXPR_1 DECIMAL(15,2)"));
@@ -127,5 +129,17 @@ class GeneratorServiceTest {
         GenerateRequest r = req("SELECT * FROM CUSTOMER");
         r.procedureName = "X; DROP";
         assertThrows(IllegalArgumentException.class, () -> service.generate(r));
+    }
+
+    @Test
+    void wrapsLongInputQueryLinesAtOneHundredCharacters() {
+        String query = "SELECT CUSTOMER_ID, CUSTOMER_NAME, CUSTOMER_ADDRESS, CUSTOMER_PHONE, "
+            + "CUSTOMER_EMAIL, CUSTOMER_STATUS, CUSTOMER_CREATED_AT FROM CUSTOMER "
+            + "WHERE CUSTOMER_STATUS = 'ACTIVE' AND CUSTOMER_REGION = 'NORTH AMERICA'";
+        GenerateResponse res = service.generate(req(query));
+
+        assertTrue(res.complete);
+        assertTrue(res.source.lines().allMatch(line -> line.length() <= 100));
+        assertTrue(res.source.contains("CUSTOMER_REGION = 'NORTH AMERICA'"));
     }
 }

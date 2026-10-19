@@ -18,7 +18,7 @@ public class QueryParser {
         public Set<String> paramNames = new LinkedHashSet<>();
         /** Parameter name of every marker in the statement, in order of appearance. */
         public List<String> markers = new ArrayList<>();
-        /** Query text with ? markers replaced by :Pn and no trailing semicolon. */
+        /** Query text with markers replaced by generated parameter names and no trailing semicolon. */
         public String sql;
         /** The same query with every marker as ?, for preparing against the database. */
         public String jdbcSql;
@@ -63,16 +63,17 @@ public class QueryParser {
             } else if (ch == ';') {
                 throw new IllegalArgumentException("Only a single SQL statement is supported.");
             } else if (ch == '?') {
-                String name = "P" + (++n);
+                String name = "P_" + (++n);
                 addMarker(pq, name);
-                named.append(':').append(name);
+                named.append(name);
                 jdbc.append('?');
                 code.append(' ');
             } else if (ch == ':') {
                 Matcher m = NAMED.matcher(sql);
                 if (m.find(i) && m.start() == i) {
-                    addMarker(pq, m.group(1).toUpperCase());
-                    named.append(m.group());
+                    String name = parameterName(m.group(1));
+                    addMarker(pq, name);
+                    named.append(name);
                     jdbc.append('?');
                     code.append(' ');
                     i = m.end() - 1;
@@ -107,5 +108,10 @@ public class QueryParser {
     private static void addMarker(ParsedQuery pq, String name) {
         pq.markers.add(name);
         pq.paramNames.add(name);
+    }
+
+    private static String parameterName(String name) {
+        String normalized = name.toUpperCase();
+        return normalized.startsWith("P_") ? normalized : "P_" + normalized;
     }
 }

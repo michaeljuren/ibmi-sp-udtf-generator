@@ -7,7 +7,8 @@ from the prepared statement's metadata.
 
 - Any single `SELECT`, `WITH` (CTE) or `VALUES` statement is accepted: joins, `UNION`, subselects, expressions, etc.
 - Result columns (used for the function's `RETURNS TABLE`) come from Db2; unaliased expressions are named `EXPR_n`. Procedures don't need them.
-- Host variables (`:name`) and `?` markers become `IN` parameters (`?` is rewritten to `:P1`, `:P2`, ...), typed by Db2. A repeated `:name` takes the type of its first use.
+- Host variables (`:name`) and `?` markers become `IN` parameters named `P_name` and `P_1`, `P_2`, ... (without marker characters), typed by Db2. A repeated `:name` takes the type of its first use.
+- Input query lines are wrapped to fit within 100 characters in generated source.
 - Types Db2 can't determine (e.g. `SELECT ?`, `? IS NULL`) are flagged; enter the type in the UI.
 - Only one statement is allowed; `DML`/`DDL` and anything after a `;` are rejected. A query Db2 rejects returns its error message.
 - Unqualified table names resolve through the connection's library list (`*LIBL`); qualify them as `LIB.FILE` to be explicit. SQL naming (`.`) only.
