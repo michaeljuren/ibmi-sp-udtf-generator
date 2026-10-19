@@ -25,6 +25,18 @@ export class App {
   readonly loading = signal(false);
   readonly copied = signal(false);
 
+  reset(): void {
+    this.routineType = 'PROCEDURE';
+    this.query = '';
+    this.procedureLibrary = '';
+    this.procedureName = '';
+    this.columnTypes = {};
+    this.parameterTypes = {};
+    this.result.set(null);
+    this.error.set(null);
+    this.copied.set(false);
+  }
+
   generate(): void {
     this.loading.set(true);
     this.error.set(null);

@@ -1,32 +1,38 @@
 <main>
-  <h1>IBMi Stored Procedure/User Defined Function Generator</h1>
-  <p class="hint">
-    Paste a SELECT, WITH or VALUES query (joins, unions, subqueries and CTEs are fine). Column and parameter types are
-    determined by Db2 by preparing the query; it is never executed.
-  </p>
+  <header class="app-header">
+      <h1>IBMi Stored Procedure/User Defined Function Generator</h1>
+  </header>
 
-  <section>
-    <h2>Generate</h2>
-    <label><input type="radio" name="routineType" value="PROCEDURE" [(ngModel)]="routineType" /> Stored Procedure</label>
-    <label><input type="radio" name="routineType" value="FUNCTION" [(ngModel)]="routineType" /> User Defined Function (returns table)</label>
-  </section>
+  <div class="layout">
+  <div class="pane input-pane">
+    <section class="types">
+      <label class="radio"><input type="radio" name="routineType" value="PROCEDURE" [(ngModel)]="routineType" /> Stored Procedure</label>
+      <label class="radio"><input type="radio" name="routineType" value="FUNCTION" [(ngModel)]="routineType" /> User Defined Function (returns table)</label>
+    </section>
 
-  <section>
-    <label for="query">SQL query</label>
-    <textarea id="query" name="query" rows="8" [(ngModel)]="query"></textarea>
-  </section>
+    <section class="query-section">
+      <label for="query">SQL query</label>
+      <textarea id="query" name="query" [(ngModel)]="query" spellcheck="false"
+        placeholder="Paste a SELECT, WITH or VALUES query (joins, unions, subqueries and CTEs are fine). Column and parameter types are determined by Db2 by preparing the query; it is never executed."></textarea>
+    </section>
 
-  <section>
-    <h2>{{ routineType === 'FUNCTION' ? 'Function' : 'Procedure' }}</h2>
-    <div class="row">
-      <input name="plib" placeholder="Library" [(ngModel)]="procedureLibrary" />
-      <input name="pname" placeholder="Name" [(ngModel)]="procedureName" />
-    </div>
-  </section>
+    <section>
+      <h2>{{ routineType === 'FUNCTION' ? 'Function' : 'Procedure' }}</h2>
+      <div class="row">
+        <input name="plib" placeholder="Library" [(ngModel)]="procedureLibrary" />
+        <input name="pname" placeholder="Name" [(ngModel)]="procedureName" />
+        <button type="button" class="primary" [disabled]="loading()" (click)="generate()">
+          {{ loading() ? 'Working…' : 'Generate' }}
+        </button>
+        <button type="button" (click)="reset()">Clear</button>
+      </div>
+    </section>
+  </div>
 
-  <button type="button" class="primary" [disabled]="loading()" (click)="generate()">
-    {{ loading() ? 'Working…' : 'Generate' }}
-  </button>
+  <div class="pane output-pane">
+  @if (!result() && !error()) {
+    <p class="placeholder">Results will appear here after you click Generate.</p>
+  }
 
   @if (error()) {
     <p class="error">{{ error() }}</p>
@@ -37,37 +43,11 @@
       <p class="warn">{{ w }}</p>
     }
 
-    @if (r.columns.length) {
-    <section>
-      <h2>Result columns</h2>
-      <table>
-        <thead><tr><th>Name</th><th>Type</th><th>Source</th></tr></thead>
-        <tbody>
-          @for (c of r.columns; track $index) {
-            <tr>
-              <td>{{ c.name }}</td>
-              <td>
-                @if (c.resolved && c.source !== 'user') {
-                  {{ c.type }}
-                } @else {
-                  <input [name]="'ct' + $index" placeholder="e.g. DECIMAL(15,2)"
-                    [ngModel]="columnTypes[c.name] ?? c.type ?? ''"
-                    (ngModelChange)="columnTypes[c.name] = $event" />
-                }
-              </td>
-              <td>{{ c.source }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </section>
-    }
-
     @if (r.parameters.length) {
       <section>
         <h2>Parameters</h2>
         <table>
-          <thead><tr><th>Name</th><th>Type</th><th>Source</th></tr></thead>
+          <thead><tr><th>Name</th><th>Type</th></tr></thead>
           <tbody>
             @for (p of r.parameters; track $index) {
               <tr>
@@ -81,7 +61,6 @@
                       (ngModelChange)="parameterTypes[p.name] = $event" />
                   }
                 </td>
-                <td>{{ p.source }}</td>
               </tr>
             }
           </tbody>
@@ -89,8 +68,33 @@
       </section>
     }
 
+    @if (r.columns.length) {
+    <section>
+      <h2>Result columns</h2>
+      <table>
+        <thead><tr><th>Name</th><th>Type</th></tr></thead>
+        <tbody>
+          @for (c of r.columns; track $index) {
+            <tr>
+              <td>{{ c.name }}</td>
+              <td>
+                @if (c.resolved && c.source !== 'user') {
+                  {{ c.type }}
+                } @else {
+                  <input [name]="'ct' + $index" placeholder="e.g. DECIMAL(15,2)"
+                    [ngModel]="columnTypes[c.name] ?? c.type ?? ''"
+                    (ngModelChange)="columnTypes[c.name] = $event" />
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+    }
+
     @if (r.complete && r.source) {
-      <section>
+      <section class="source-section">
         <h2>Generated source
           <button type="button" (click)="copy()">{{ copied() ? 'Copied!' : 'Copy' }}</button>
         </h2>
@@ -100,4 +104,6 @@
       <p class="hint">Fill in the missing types above and click Generate again.</p>
     }
   }
+  </div>
+  </div>
 </main>
